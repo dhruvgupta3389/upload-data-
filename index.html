@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Product Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            text-align: left;
+        }
+        label, input, select, button {
+            display: block;
+            margin: 10px 0;
+            width: 100%;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            background-color: #fff;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        img {
+            max-width: 100%;
+        }
+        #result {
+            text-align: center;
+            margin: 10px 0;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Product Management</h1>
+
+        <form id="productForm">
+            <label for="name">Product Name:</label>
+            <input type="text" id="name" required>
+
+            <label for="link">Product Link:</label>
+            <input type="text" id="link" required>
+
+            <label for="category">Product Category:</label>
+            <select id="category" required>
+                <option value="tshirts">T-Shirts</option>
+                <option value="shirts">Shirts</option>
+                <option value="hoodie">Hoodie</option>
+                <option value="sweatshirt">Sweatshirt</option>
+                <option value="tanktop">Tank Top</option>
+            </select>
+
+            <label for="price">Product Price:</label>
+            <input type="number" id="price" step="0.01" required>
+
+            <label for="image">Product Image:</label>
+            <input type="file" id="image" accept="image/*" required>
+
+            <button type="submit">Add Product</button>
+        </form>
+
+        <h2>Product List</h2>
+        <ul id="products">
+            <!-- Product items will be dynamically added here -->
+        </ul>
+
+        <button id="updateButton">Update Data on GitHub</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById("productForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value;
+            const link = document.getElementById("link").value;
+            const category = document.getElementById("category").value;
+            const price = parseFloat(document.getElementById("price").value);
+            const image = document.getElementById("image").files[0];
+
+            if (!image) {
+                alert("Please select an image for the product.");
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function () {
+                const imageData = reader.result;
+
+                const newProduct = {
+                    name: name,
+                    link: link,
+                    category: category,
+                    price: price,
+                    image: imageData
+                };
+
+                let products = JSON.parse(localStorage.getItem("products")) || [];
+
+                products.push(newProduct);
+
+                localStorage.setItem("products", JSON.stringify(products));
+
+                displayProductList();
+            };
+
+            reader.readAsDataURL(image);
+        });
+
+        document.getElementById("updateButton").addEventListener("click", function () {
+            const products = JSON.parse(localStorage.getItem("products")) || [];
+
+            // GitHub repository information
+            const repositoryOwner = "dhruvgupta3389";
+            const repositoryName = "tshopy";
+            const path = "product.json"; // The file in your GitHub repository
+            const accessToken = "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"; // Replace with your GitHub access token
+
+            const updateUrl = `https://api.github.com/repos/${repositoryOwner}/${repositoryName}/contents/${path}`;
+            const updateMethod = "PUT";
+
+            const productData = JSON.stringify(products);
+
+            const requestOptions = {
+                method: updateMethod,
+                headers: {
+                    "Authorization": `token ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    message: "Update products",
+                    content: btoa(productData),
+                }),
+            };
+
+            fetch(updateUrl, requestOptions)
+                .then(response => {
+                    if (response.ok) {
+                        localStorage.removeItem("products"); // Remove old data
+                        displayProductList();
+                        return response.json();
+                    } else {
+                        throw new Error(`GitHub API Error: ${response.status} - ${response.statusText}`);
+                    }
+                })
+                .then(data => {
+                    const resultDiv = document.getElementById("result");
+                    resultDiv.innerHTML = "Data updated successfully on GitHub!";
+                })
+                .catch(error => {
+                    console.error(error);
+                    const resultDiv = document.getElementById("result");
+                    resultDiv.innerHTML = "Failed to update data on GitHub.";
+                });
+        });
+
+        function displayProductList() {
+            const products = JSON.parse(localStorage.getItem("products")) || [];
+            const productsList = document.getElementById("products");
+            productsList.innerHTML = "";
+
+            products.forEach((product, index) => {
+                const listItem = document.createElement("li");
+                listItem.innerHTML = `
+                    <strong>${product.name}</strong>
+                    <span>(${product.category}) - $${product.price}</span>
+                    <a href="${product.link}" target="_blank">Link</a>
+                    <img src="${product.image}" alt="${product.name}">
+                `;
+                productsList.appendChild(listItem);
+            });
+        }
+
+        displayProductList();
+    </script>
+</body>
+</html>
